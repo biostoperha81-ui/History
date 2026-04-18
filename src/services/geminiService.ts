@@ -58,33 +58,38 @@ export async function getNextScene(history: ChatMessage[], currentState: GameSta
     lastUserMessage.parts[0].text += `\n\n[CURRENT_STATE]: ${JSON.stringify(currentState)}`;
   }
 
-  const response = await ai.models.generateContent({
-    model: "gemini-3.1-pro-preview",
-    contents: contents,
-    config: {
-      systemInstruction: SYSTEM_PROMPT,
-      temperature: 0.7,
-    },
-  });
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: contents,
+      config: {
+        systemInstruction: SYSTEM_PROMPT,
+        temperature: 0.7,
+      },
+    });
 
-  const text = (response as any).text || "";
-  
-  // Robust state extraction: looks for JSON blocks with state or raw blocks at the end
-  const stateRegex = /```(?:json)?\s*(\{[\s\S]*?"stats"[\s\S]*?"meta"[\s\S]*?\})\s*```|(\{[\s\S]*?"stats"[\s\S]*?"meta"[\s\S]*?\})$/;
-  const stateMatch = text.match(stateRegex);
-  let newState = currentState;
-  
-  if (stateMatch) {
-    try {
-      const jsonStr = stateMatch[1] || stateMatch[2];
-      newState = JSON.parse(jsonStr.trim());
-    } catch (e) {
-      console.error("Failed to parse state from model response", e);
+    const text = response.text || "";
+    
+    // Robust state extraction: looks for JSON blocks with state or raw blocks at the end
+    const stateRegex = /```(?:json)?\s*(\{[\s\S]*?"stats"[\s\S]*?"meta"[\s\S]*?\})\s*```|(\{[\s\S]*?"stats"[\s\S]*?"meta"[\s\S]*?\})$/;
+    const stateMatch = text.match(stateRegex);
+    let newState = currentState;
+    
+    if (stateMatch) {
+      try {
+        const jsonStr = stateMatch[1] || stateMatch[2];
+        newState = JSON.parse(jsonStr.trim());
+      } catch (e) {
+        console.error("Failed to parse state from model response", e);
+      }
     }
+
+    const cleanText = text.replace(stateRegex, "").trim();
+    return { text: cleanText, newState };
+  } catch (error: any) {
+    if (error?.status === 429 || error?.message?.includes('429')) {
+      throw new Error('QUOTA_EXCEEDED');
+    }
+    throw error;
   }
-
-  // Pure text for display (strip the state JSON block if possible)
-  const cleanText = text.replace(stateRegex, "").trim();
-
-  return { text: cleanText, newState };
 }
