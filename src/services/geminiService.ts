@@ -1,7 +1,13 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { GameState, ChatMessage } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY as string });
+const getApiKey = () => {
+  // Try platform-specific key first, then Vite-specific key
+  const key = process?.env?.GEMINI_API_KEY || (import.meta as any).env?.VITE_GEMINI_API_KEY;
+  return key || '';
+};
+
+const ai = new GoogleGenAI({ apiKey: getApiKey() });
 
 const SYSTEM_PROMPT = `
 # ROLE: AI Game Engine (Gemini-based)

@@ -182,10 +182,10 @@ export default function App() {
                     hr: () => <div className="h-px bg-gradient-to-r from-transparent via-accent/20 to-transparent my-16 opacity-30" />,
                     p: ({children}) => <p className="leading-[1.8] mb-12 text-[19px] sm:text-[21px] text-text-main/90 font-light text-balance">{children}</p>,
                     strong: ({children}) => (
-                      <div className="flex items-center gap-3 mb-6 mt-12 first:mt-0">
-                        <div className="h-[2px] w-6 bg-accent opacity-40" />
+                      <span className="flex items-center gap-3 mb-6 mt-12 first:mt-0">
+                        <span className="h-[2px] w-6 bg-accent opacity-40 inline-block" />
                         <b className="text-accent uppercase tracking-[4px] text-[13px] sm:text-[14px] font-sans font-semibold italic">{children}</b>
-                      </div>
+                      </span>
                     ),
                     code: ({children}) => (
                       <details className="mt-8 opacity-20 hover:opacity-100 transition-opacity">
