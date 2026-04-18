@@ -1,0 +1,22 @@
+# Cloudflare Pages configuration
+
+# Default settings for the Cloudflare Pages
+
+# Specify the root directory of your project
+root = "."
+
+# Specify the build command
+[build]
+  command = "npm run build"
+
+# Directory to output the build artifacts
+[[publish]]
+  dir = "public"
+
+# Optional settings
+[env]
+  NODE_ENV = "production"
+
+# Oversampling configuration
+[oversampling]
+  target = "es2017"
