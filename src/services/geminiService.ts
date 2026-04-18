@@ -2,9 +2,15 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { GameState, ChatMessage } from "../types";
 
 const getApiKey = () => {
-  // Try platform-specific key first, then Vite-specific key
-  const key = process?.env?.GEMINI_API_KEY || (import.meta as any).env?.VITE_GEMINI_API_KEY;
-  return key || '';
+  // Use a helper to avoid "process is not defined" errors in some browser environments
+  const getProcessEnv = () => {
+    try { return process.env; } catch { return {}; }
+  };
+  
+  const vEnv = (import.meta as any).env || {};
+  const pEnv = getProcessEnv() || {};
+  
+  return vEnv.VITE_GEMINI_API_KEY || pEnv.GEMINI_API_KEY || '';
 };
 
 const ai = new GoogleGenAI({ apiKey: getApiKey() });
