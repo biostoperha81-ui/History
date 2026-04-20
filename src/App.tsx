@@ -20,6 +20,7 @@ export default function App() {
   );
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
   const [loadingText, setLoadingText] = useState('Анализ сюжетных линий...');
 
   useEffect(() => {
@@ -52,7 +53,19 @@ export default function App() {
     try {
       const initMessage: ChatMessage = {
         role: 'user',
-        content: '[START_COMMAND] Инициализируй Пролог. Место действия: Спальня после первой ночи. Персонажи: Главная героиня и Женя. Музыка: Выбери из списка в конце книги. Контекст: Спустя 7 лет ожидания. Опиши сцену пробуждения, используя психологические паттерны из "Психологии любви".'
+        content: `[START_COMMAND] 
+        ТЕМА: ПРЕДЫСТОРИЯ (Prologue: Origins). 
+        ЗАДАЧА: Напиши кинематографичную вводную часть, объясняющую контекст отношений между Ксаной и Женей ДО начала событий книги.
+        
+        ИНСТРУКЦИИ:
+        1. Начни с воспоминания из школьных лет. Опиши пропасть между прилежной девочкой и недосягаемым Женей.
+        2. Психологизм: Используй "Психологию любви" для описания формирования тревожной привязанности и надежды.
+        3. Атмосфера: Стиль Ксаны Гуржеевой. Опиши запахи (его парфюм, старые тетради) и предложи музыку для фона.
+        4. Монолог: Это должен быть интимный, доверительный внутренний голос.
+        5. Финал: Момент "За секунду до..." той ночи.
+        6. Интерактив: Закончи одним глубоким вопросом, определяющим настрой героини.
+        
+        ДИЗАЙН: Используй разделители --- и жирный шрифт для эмоций. БЕЗ КОДА.`
       };
       const { text, newState } = await getNextScene([initMessage], INITIAL_STATE);
       setHistory([{ role: 'assistant', content: text, state: newState }]);
@@ -69,6 +82,12 @@ export default function App() {
         const errorMsg: ChatMessage = { 
           role: 'assistant', 
           content: '⚠️ **API ключ отсутствует.**\n\nПохоже, вы забыли настроить переменную окружения `VITE_GEMINI_API_KEY` в Cloudflare или другом сервисе хостинга.' 
+        };
+        setHistory([errorMsg]);
+      } else if (error.message === 'SERVICE_BUSY') {
+        const errorMsg: ChatMessage = { 
+          role: 'assistant', 
+          content: '⚠️ **Сервер перегружен.**\n\nМодель Gemini сейчас испытывает высокую нагрузку (ошибка 503). Это временно. Пожалуйста, попробуйте обновить страницу через 10-20 секунд.' 
         };
         setHistory([errorMsg]);
       } else {
@@ -106,8 +125,17 @@ export default function App() {
         setHistory([...newHistory, errorMsg]);
       } else if (error.message === 'MISSING_API_KEY') {
         alert("Ошибка: отсутствует API ключ (VITE_GEMINI_API_KEY). Проверьте настройки окружения.");
+      } else if (error.message === 'SERVICE_BUSY') {
+        const errorMsg: ChatMessage = { 
+          role: 'assistant', 
+          content: '⚠️ **Сервер временно недоступен.**\n\nМодель перегружена (503). Пожалуйста, подождите несколько секунд и попробуйте отправить ваше действие снова. Ваш прогресс в безопасности.' 
+        };
+        setHistory([...newHistory, errorMsg]);
       } else {
-        alert(`Произошла ошибка при связи с движком: ${error.message || 'Неизвестная ошибка'}. Попробуйте еще раз.`);
+        const cleanError = typeof error.message === 'string' && error.message.startsWith('{') 
+          ? JSON.parse(error.message).error?.message || error.message 
+          : error.message;
+        alert(`Произошла ошибка при связи с движком: ${cleanError || 'Неизвестная ошибка'}. Попробуйте еще раз.`);
       }
     } finally {
       setIsLoading(false);
@@ -115,12 +143,11 @@ export default function App() {
   };
 
   const resetGame = () => {
-    if (window.confirm("Вы уверены, что хотите начать сначала? Прогресс будет потерян.")) {
-      storage.clear();
-      setHistory([]);
-      setState(INITIAL_STATE);
-      handleInitialization();
-    }
+    storage.clear();
+    setHistory([]);
+    setState(INITIAL_STATE);
+    setIsResetting(false);
+    handleInitialization();
   };
 
   return (
@@ -175,13 +202,56 @@ export default function App() {
                </div>
             </div>
             <button 
-              onClick={resetGame}
+              onClick={() => setIsResetting(true)}
               className="w-10 h-10 flex items-center justify-center rounded-full glass-panel hover:bg-white/10 active:scale-90 transition-all text-text-muted hover:text-accent"
+              title="Начать сначала"
             >
               <RotateCcw size={16} />
             </button>
           </div>
         </div>
+
+        {/* Custom Reset Confirmation Overlay */}
+        <AnimatePresence>
+          {isResetting && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-bg-primary/80 backdrop-blur-md"
+            >
+              <motion.div 
+                initial={{ scale: 0.9, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                className="glass-panel p-8 rounded-3xl max-w-sm w-full text-center space-y-6"
+              >
+                <div className="flex justify-center">
+                  <div className="w-16 h-16 rounded-full bg-accent/10 flex items-center justify-center text-accent">
+                    <RotateCcw size={32} />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-xl font-serif text-white">Начать сначала?</h3>
+                  <p className="text-sm text-text-muted">Весь текущий прогресс вашей истории будет безвозвратно утерян.</p>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <button 
+                    onClick={() => setIsResetting(false)}
+                    className="py-3 px-6 rounded-xl bg-white/5 hover:bg-white/10 text-text-main transition-colors font-medium border border-white/5"
+                  >
+                    Отмена
+                  </button>
+                  <button 
+                    onClick={resetGame}
+                    className="py-3 px-6 rounded-xl bg-accent/20 hover:bg-accent/30 text-accent transition-colors font-bold border border-accent/20"
+                  >
+                    Сбросить
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </header>
 
       {/* Ambient Atmosphere Indicator */}
