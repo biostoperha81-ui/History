@@ -113,7 +113,7 @@ export async function getNextScene(history: ChatMessage[], currentState: GameSta
       }
     }
 
-    const cleanText = text.replace(stateRegex, "").trim();
+    const cleanText = text.replace(stateRegex, "").replace(/```[\s\S]*?```/g, "").trim();
     return { text: cleanText, newState };
   } catch (error: any) {
     if (error?.status === 429 || error?.message?.includes('429')) {

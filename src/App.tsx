@@ -124,144 +124,187 @@ export default function App() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-bg-primary text-text-main font-sans selection:bg-accent/30 overflow-hidden">
-      <div className="bg-vignette" />
+    <div className="relative flex flex-col h-screen overflow-hidden bg-bg-primary text-text-main font-sans selection:bg-accent/30">
+      {/* Immersive Background Layers */}
+      <div className="bg-animated" />
+      <div className="bg-noise" />
+      <div className="vignette-overlay" />
 
-      {/* Status Bar - Immersive HUD */}
-      <header className="fixed top-0 inset-x-0 h-12 flex items-center justify-between px-4 sm:px-10 z-50 bg-gradient-to-b from-bg-primary/80 to-transparent backdrop-blur-[2px]">
-        <div className="flex items-center gap-2 overflow-hidden">
-          <div className="text-[9px] sm:text-[11px] uppercase tracking-[2px] text-accent font-medium truncate">
-            {state.meta.location} <span className="opacity-30 mx-1">/</span> {state.meta.chapter}
+      {/* Cinematic HUD - Top Bar */}
+      <header className="fixed top-0 inset-x-0 h-16 flex items-center justify-between px-6 sm:px-12 z-50">
+        <div className="flex flex-col gap-1">
+          <div className="text-[10px] uppercase tracking-[4px] text-accent font-bold">
+            {state.meta.chapter}
+          </div>
+          <div className="flex items-center gap-2">
+            <MapPin size={10} className="text-accent/60" />
+            <span className="text-[11px] font-medium text-text-muted/80">{state.meta.location}</span>
           </div>
         </div>
         
-        <div className="flex items-center gap-3 sm:gap-6">
-          <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-accent/5 border border-accent/10">
-            <Heart size={10} className="text-accent fill-accent/20" />
-            <span className="text-[10px] sm:text-[12px] font-mono font-bold text-accent">{state.stats.relationshipPoints}</span>
+        <div className="flex items-center gap-8">
+          {/* Relationship Indicator - Detailed Bar */}
+          <div className="hidden sm:flex flex-col gap-1.5 w-48">
+             <div className="flex justify-between items-center px-1">
+                <span className="text-[9px] uppercase tracking-widest text-accent/70 font-bold flex items-center gap-1.5">
+                  <Heart size={10} className={state.stats.relationshipPoints > 50 ? "fill-accent" : ""} />
+                  Притяжение
+                </span>
+                <span className="text-[10px] font-mono text-accent">{state.stats.relationshipPoints}%</span>
+             </div>
+             <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
+                <motion.div 
+                  initial={{ width: 0 }}
+                  animate={{ width: `${state.stats.relationshipPoints}%` }}
+                  transition={{ duration: 1.5, ease: "easeOut" }}
+                  className="h-full bg-gradient-to-r from-accent/40 via-accent to-accent/40 shadow-[0_0_10px_rgba(212,175,55,0.4)]"
+                />
+             </div>
           </div>
-          <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-accent/5 border border-accent/10">
-            <Flame size={10} className="text-accent" />
-            <span className="text-[10px] sm:text-[12px] font-mono font-bold text-accent">{state.stats.tensionLevel}</span>
+
+          <div className="flex items-center gap-4">
+            <div className="flex flex-col items-end gap-1">
+               <span className="text-[9px] uppercase tracking-widest text-text-muted/50">Напряжение</span>
+               <div className="flex gap-1">
+                  {[...Array(5)].map((_, i) => (
+                    <div 
+                      key={i} 
+                      className={`h-1 w-3 rounded-full transition-colors duration-500 ${i < (state.stats.tensionLevel / 20) ? 'bg-accent/80' : 'bg-white/5'}`} 
+                    />
+                  ))}
+               </div>
+            </div>
+            <button 
+              onClick={resetGame}
+              className="w-10 h-10 flex items-center justify-center rounded-full glass-panel hover:bg-white/10 active:scale-90 transition-all text-text-muted hover:text-accent"
+            >
+              <RotateCcw size={16} />
+            </button>
           </div>
-          <button 
-            onClick={resetGame}
-            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/5 active:scale-90 transition-all text-text-muted hover:text-accent"
-          >
-            <RotateCcw size={14} />
-          </button>
         </div>
       </header>
 
-      {/* Main Narrative Area */}
-      <div 
-        ref={scrollRef}
-        className="flex-1 overflow-y-auto px-6 sm:px-10 pt-20 pb-40 space-y-20 scroll-smooth relative z-10 narrative-mask"
-      >
-        <div className="fixed top-12 right-6 sm:right-10 text-[8px] sm:text-[10px] text-text-muted italic flex items-center gap-2 opacity-40 z-40">
-          <motion.div 
-            animate={{ width: [8, 16, 8] }} 
-            transition={{ repeat: Infinity, duration: 3 }}
-            className="h-[1px] bg-accent" 
-          />
-          ATMOSPHERE: {state.meta.soundtrack}
+      {/* Ambient Atmosphere Indicator */}
+      <div className="fixed top-20 right-6 sm:right-12 z-40 flex items-center gap-3">
+        <div className="flex flex-col items-end">
+          <span className="text-[8px] uppercase tracking-[4px] text-accent/40">Atmosphere</span>
+          <span className="text-[10px] italic text-text-muted/60">{state.meta.soundtrack}</span>
         </div>
-
-        <AnimatePresence mode="popLayout">
-          {history.length === 0 && isLoading && (
-            <div className="h-full flex flex-col items-center justify-center space-y-6">
-              <Loader2 className="animate-spin text-accent" size={24} />
-              <motion.p 
-                key={loadingText}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 0.6 }}
-                className="font-serif italic tracking-[3px] text-text-muted text-[10px] uppercase text-center"
-              >
-                {loadingText}
-              </motion.p>
-            </div>
-          )}
-          {history.filter(m => m.role === 'assistant').map((msg, idx) => (
-            <motion.div
-              key={idx}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-100px" }}
-              transition={{ duration: 1.5, ease: "easeOut" }}
-              className="max-w-2xl mx-auto"
-            >
-              <div className="markdown-body font-serif">
-                <ReactMarkdown
-                  components={{
-                    hr: () => <div className="h-px bg-gradient-to-r from-transparent via-accent/20 to-transparent my-16 opacity-30" />,
-                    p: ({children}) => <p className="leading-[1.8] mb-12 text-[19px] sm:text-[21px] text-text-main/90 font-light text-balance">{children}</p>,
-                    strong: ({children}) => (
-                      <span className="flex items-center gap-3 mb-6 mt-12 first:mt-0">
-                        <span className="h-[2px] w-6 bg-accent opacity-40 inline-block" />
-                        <b className="text-accent uppercase tracking-[4px] text-[13px] sm:text-[14px] font-sans font-semibold italic">{children}</b>
-                      </span>
-                    ),
-                    code: ({children}) => (
-                      <details className="mt-8 opacity-20 hover:opacity-100 transition-opacity">
-                        <summary className="text-[8px] uppercase tracking-[3px] cursor-pointer list-none text-center">Engine Data</summary>
-                        <div className="mt-4 p-4 bg-black/50 rounded-lg text-[9px] font-mono leading-relaxed border border-white/5">
-                          {children}
-                        </div>
-                      </details>
-                    )
-                  }}
-                >
-                  {msg.content}
-                </ReactMarkdown>
-              </div>
-            </motion.div>
-          ))}
-        </AnimatePresence>
-
-        {isLoading && history.length > 0 && (
-          <div className="flex justify-center py-6">
-            <Loader2 className="animate-spin text-accent/50" size={24} />
-          </div>
-        )}
+        <motion.div 
+          animate={{ height: [4, 12, 4] }} 
+          transition={{ repeat: Infinity, duration: 2 }}
+          className="w-[1px] bg-accent/40" 
+        />
       </div>
 
-      {/* Input Overlay - Thumb Friendly */}
-      <footer className="fixed bottom-0 inset-x-0 p-4 sm:p-8 bg-gradient-to-t from-bg-primary via-bg-primary/95 to-transparent z-50">
-        <div className="max-w-2xl mx-auto relative">
-          <div className="flex items-center gap-3 mb-3 ml-2">
-            <motion.div 
-               animate={{ opacity: [0.4, 1, 0.4] }} 
-               transition={{ repeat: Infinity, duration: 2 }}
-               className="w-1.5 h-1.5 rounded-full bg-accent"
-            />
-            <span className="text-[10px] uppercase tracking-[3px] text-accent/60 font-medium">Ваше действие</span>
-          </div>
+      {/* Narrative Stage */}
+      <main className="flex-1 flex flex-col justify-end relative z-10 px-4 sm:px-12 pb-32 sm:pb-40">
+        <div 
+          ref={scrollRef}
+          className="max-w-4xl mx-auto w-full max-h-[60vh] overflow-y-auto pr-4 custom-scrollbar"
+        >
+          <AnimatePresence mode="popLayout">
+            {history.length === 0 && isLoading && (
+              <div className="h-40 flex flex-col items-center justify-center space-y-4">
+                <Loader2 className="animate-spin text-accent/40" size={20} />
+                <motion.p 
+                  key={loadingText}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 0.5 }}
+                  className="font-serif italic tracking-[4px] text-text-muted text-[10px] uppercase"
+                >
+                  {loadingText}
+                </motion.p>
+              </div>
+            )}
+            
+            {history.filter(m => m.role === 'assistant').map((msg, idx, filtered) => {
+              const isLast = idx === filtered.length - 1;
+              return (
+                <motion.div
+                  key={idx}
+                  initial={{ opacity: 0, y: 30, filter: 'blur(10px)' }}
+                  animate={{ opacity: isLast ? 1 : 0.4, y: 0, filter: isLast ? 'blur(0px)' : 'blur(2px)' }}
+                  transition={{ duration: 1.2, ease: "easeOut" }}
+                  className={`mb-16 last:mb-0 transition-all duration-1000 ${!isLast ? 'scale-[0.98]' : ''}`}
+                >
+                  <div className="markdown-body font-serif">
+                    <ReactMarkdown
+                      components={{
+                        hr: () => <div className="h-px bg-gradient-to-r from-transparent via-accent/10 to-transparent my-16 opacity-20" />,
+                        p: ({children}) => (
+                          <p className={`leading-[1.8] mb-8 text-[18px] sm:text-[22px] text-text-main font-light text-balance transition-colors duration-1000 ${isLast ? 'text-white drop-shadow-[0_0_30px_rgba(255,255,255,0.1)]' : 'text-text-muted/60'}`}>
+                            {children}
+                          </p>
+                        ),
+                        strong: ({children}) => (
+                          <span className="flex items-center gap-4 mb-8 mt-16 first:mt-0">
+                            <span className="h-[1px] w-12 bg-accent opacity-40 inline-block" />
+                            <b className="text-accent uppercase tracking-[6px] text-[13px] sm:text-[14px] font-sans font-bold italic drop-shadow-[0_0_10px_rgba(212,175,55,0.3)]">{children}</b>
+                          </span>
+                        ),
+                        code: () => null,
+                        pre: () => null
+                      }}
+                    >
+                      {msg.content}
+                    </ReactMarkdown>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
           
-          <div className="relative overflow-hidden rounded-xl bg-white/[0.03] border border-white/10 focus-within:border-accent/30 transition-all shadow-2xl backdrop-blur-sm">
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-              placeholder="Напишите, что вы чувствуете или делаете..."
-              className="w-full bg-transparent py-4 sm:py-5 pl-5 pr-14 outline-none text-base sm:text-[17px] text-text-main placeholder:text-text-muted/20"
-              disabled={isLoading}
-            />
+          {isLoading && history.length > 0 && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex justify-start py-8 pl-1"
+            >
+              <div className="flex gap-1.5">
+                {[0, 1, 2].map(i => (
+                  <motion.div 
+                    key={i}
+                    animate={{ scale: [1, 1.5, 1], opacity: [0.3, 0.6, 0.3] }}
+                    transition={{ repeat: Infinity, duration: 1.5, delay: i * 0.2 }}
+                    className="w-1.5 h-1.5 rounded-full bg-accent/40"
+                  />
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </div>
+      </main>
+
+      {/* Stage Controls - Visual Novel Style Box */}
+      <footer className="fixed bottom-0 inset-x-0 p-6 sm:p-12 z-50">
+        <div className="max-w-4xl mx-auto w-full">
+          <div className="glass-panel p-2 sm:p-3 rounded-3xl flex items-center gap-4 overflow-hidden ring-1 ring-white/10 shadow-inner">
+            <div className="flex-1 relative">
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                placeholder="Ваше решение..."
+                className="w-full bg-transparent py-4 sm:py-5 pl-6 pr-14 outline-none text-[16px] sm:text-[18px] text-white placeholder:text-text-muted/30 font-serif italic"
+                disabled={isLoading}
+              />
+              <div className="absolute left-6 bottom-0 h-[2px] w-0 bg-accent transition-all duration-500 focus-within:w-[calc(100%-48px)]" />
+            </div>
             <button
               onClick={handleSend}
               disabled={isLoading || !input.trim()}
-              className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center text-accent/40 hover:text-accent disabled:text-zinc-800 transition-all active:scale-95"
+              className="w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center rounded-2xl bg-white/5 hover:bg-accent/20 text-accent/40 hover:text-accent disabled:text-white/5 transition-all active:scale-95 border border-white/5 group"
             >
-              {isLoading ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} />}
+              {isLoading ? (
+                <Loader2 className="animate-spin" size={24} />
+              ) : (
+                <motion.div whileHover={{ x: 3 }}>
+                  <Send size={24} className="group-hover:drop-shadow-[0_0_8px_rgba(212,175,55,0.6)]" />
+                </motion.div>
+              )}
             </button>
-          </div>
-          
-          <div className="flex justify-center mt-4">
-             <div className="px-3 py-1 bg-accent/5 border border-accent/10 rounded-full">
-                <p className="text-[8px] sm:text-[9px] text-text-muted uppercase tracking-[3px] opacity-60">
-                  Interactive Engine v1.2 • {state.meta.chapter}
-                </p>
-             </div>
           </div>
         </div>
       </footer>
