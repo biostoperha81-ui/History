@@ -4,16 +4,32 @@ import { GameState, ChatMessage } from "../types";
 const getApiKey = () => {
   // Use a helper to avoid "process is not defined" errors in some browser environments
   const getProcessEnv = () => {
-    try { return process.env; } catch { return {}; }
+    try { 
+      return (typeof process !== 'undefined') ? process.env : {}; 
+    } catch { 
+      return {}; 
+    }
   };
   
   const vEnv = (import.meta as any).env || {};
   const pEnv = getProcessEnv() || {};
   
-  return vEnv.VITE_GEMINI_API_KEY || pEnv.GEMINI_API_KEY || '';
+  const key = vEnv.VITE_GEMINI_API_KEY || pEnv.GEMINI_API_KEY || (pEnv as any).VITE_GEMINI_API_KEY;
+  return key || '';
 };
 
-const ai = new GoogleGenAI({ apiKey: getApiKey() });
+// We create a lazy initializer to ensure we have the key when needed
+let aiInstance: GoogleGenAI | null = null;
+const getAi = () => {
+  if (!aiInstance) {
+    const key = getApiKey();
+    if (!key) {
+      throw new Error('MISSING_API_KEY');
+    }
+    aiInstance = new GoogleGenAI({ apiKey: key });
+  }
+  return aiInstance;
+};
 
 const SYSTEM_PROMPT = `
 # ROLE: AI Game Engine (Gemini-based)
@@ -71,6 +87,7 @@ export async function getNextScene(history: ChatMessage[], currentState: GameSta
   }
 
   try {
+    const ai = getAi();
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: contents,

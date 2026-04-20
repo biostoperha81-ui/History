@@ -65,6 +65,18 @@ export default function App() {
           content: '⚠️ **Лимит запросов исчерпан при запуске.**\n\nДвигатель не смог инициализировать игру из-за квоты. Пожалуйста, подождите минуту и обновите страницу.' 
         };
         setHistory([errorMsg]);
+      } else if (error.message === 'MISSING_API_KEY') {
+        const errorMsg: ChatMessage = { 
+          role: 'assistant', 
+          content: '⚠️ **API ключ отсутствует.**\n\nПохоже, вы забыли настроить переменную окружения `VITE_GEMINI_API_KEY` в Cloudflare или другом сервисе хостинга.' 
+        };
+        setHistory([errorMsg]);
+      } else {
+        const errorMsg: ChatMessage = { 
+          role: 'assistant', 
+          content: `⚠️ **Ошибка связи с движком.**\n\nПодробности: ${error.message || 'Неизвестная ошибка'}` 
+        };
+        setHistory([errorMsg]);
       }
     } finally {
       setIsLoading(false);
@@ -92,8 +104,10 @@ export default function App() {
           content: '⚠️ **Лимит запросов исчерпан.**\n\nДвигатель игры временно приостановлен из-за ограничений бесплатной квоты Google. Пожалуйста, подождите 1-2 минуты и попробуйте отправить действие снова. Ваш прогресс сохранен.' 
         };
         setHistory([...newHistory, errorMsg]);
+      } else if (error.message === 'MISSING_API_KEY') {
+        alert("Ошибка: отсутствует API ключ (VITE_GEMINI_API_KEY). Проверьте настройки окружения.");
       } else {
-        alert("Произошла ошибка при связи с движком. Попробуйте еще раз.");
+        alert(`Произошла ошибка при связи с движком: ${error.message || 'Неизвестная ошибка'}. Попробуйте еще раз.`);
       }
     } finally {
       setIsLoading(false);
